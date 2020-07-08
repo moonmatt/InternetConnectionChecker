@@ -9,16 +9,71 @@ app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 
 
-const speedTest = require('@opstalent/speedtest.net');
+const testAvailable = require('check-internet-connected');
+const testSpeed = require('@opstalent/speedtest.net');
 
 // Change this to choose the frequency of speedtest https://crontab.guru/
 cron.schedule('*/2 * * * *', () => {
 
-    const test = speedTest({
+    const speed_test = testSpeed({
         maxTime: 5000
     });
 
-    test.on('data', data => {
+    testAvailable({
+        timeout: 5000, //timeout connecting to each server, each try
+        retries: 5,//number of retries to do before failing
+        domain: 'http://neverssl.com/',//the domain to check DNS record of
+    })
+        .then((result) => {
+            console.log("Succesfully pinged neverssl.com");
+            let content = {
+                "date": moment().format("YYYY-M-D H:mm"),
+                "available": 1
+            }
+            fs.readFile('./public/file.json', 'utf-8', (err, file) => { // get Json file with older results
+                if (err) {
+                    throw err;
+                }
+
+                // parse the results
+                const newJson = JSON.parse(file.toString());
+                newJson.Availability.push(content) // push the new speedtest to the other results
+
+                // write all the results to the file
+                fs.writeFile('./public/file.json', JSON.stringify(newJson, null, 4), (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log("JSON data is saved.");
+                });
+            });
+        })
+        .catch((ex) => {
+            console.log("Failed to Ping neverssl.com");
+            let content = {
+                "date": moment().format("YYYY-M-D H:mm"),
+                "available": 0
+            }
+            fs.readFile('./public/file.json', 'utf-8', (err, file) => { // get Json file with older results
+                if (err) {
+                    throw err;
+                }
+
+                // parse the results
+                const newJson = JSON.parse(file.toString());
+                newJson.Available.push(content) // push the new speedtest to the other results
+
+                // write all the results to the file
+                fs.writeFile('./public/file.json', JSON.stringify(newJson, null, 4), (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                    console.log("JSON data is saved.");
+                });
+            });
+        });
+
+    speed_test.on('data', data => {
         console.log("##################################")
         console.log("DOWNLOAD: " + data.speeds.download)
         console.log("UPLOAD: " + data.speeds.upload)
@@ -49,7 +104,7 @@ cron.schedule('*/2 * * * *', () => {
 
     });
 
-    test.on('error', err => {
+    speed_test.on('error', err => {
         console.error(err);
     });
 });
