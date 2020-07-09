@@ -11,6 +11,20 @@
 </head>
 
 <body>
+    <script>
+        function selectDate(event) {
+            // console.log(window.location.pathname);
+            const date = event.target.value;
+            window.location.href = window.location.origin + '/' + date;
+        };
+    </script>
+    <label for="dates">Date:</label>
+    <select name="dates" id="dates" onchange="selectDate(event)" selected=>
+        <option disabled selected value> -- Select a Date -- </option>
+        <% dates.forEach((date) => { %>
+        <option value="<%= date %>"> <%=date %> </option>
+        <%  })  %>
+    </select>
     <div id="availability" style="height: 500px;"></div>
     <div id="speed" style="height: 500px;"></div>
 
