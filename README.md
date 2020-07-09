@@ -15,9 +15,25 @@ This tool allows you to make a costant checks on your Internet connection using 
 # Libraries needed
 
 - Express (https://www.npmjs.com/package/express), needed for the website.
+```bash
+npm install express
+```
 - Ejs (https://www.npmjs.com/package/ejs), needed for the frontend of the website.
+```bash
+npm install ejs
+```
 - Moment (https://www.npmjs.com/package/moment), needed to get the current time.
+```bash
+npm install moment
+```
 - Node-Cron (https://www.npmjs.com/package/node-cron), needed to execute the speedtest frequently.
+```bash
+npm install --save node-cron
+```
+- @opstalent/speedtest.net (https://www.npmjs.com/package/@opstalent/speedtest.net), needed to perform the speedtest
+```bash
+npm install --save @opstalent/speedtest.net
+```
 
 # How to get started
 
@@ -25,7 +41,7 @@ First of all, install Node.js, then create a folder, go on the command prompt, a
 ```bash
 npm init
 ```
-to initialize the project, then install all the required libraries (listed over).
+to initialize the project, then install all the required libraries (listed above).
 At this point download this repo and move all the files and folders (/public, /views and app.js) to your project's folder.
 
 Now everything should be ready, type in the console
