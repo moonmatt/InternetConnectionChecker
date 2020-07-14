@@ -2,6 +2,7 @@ const express = require('express');
 const app = express();
 const ejs = require('ejs')
 const fs = require('fs');
+const path = require('path');
 const moment = require('moment')
 var cron = require('node-cron');
 
@@ -9,16 +10,85 @@ app.set('view engine', 'ejs');
 app.use(express.static(__dirname + '/public'));
 
 
-const speedTest = require('@opstalent/speedtest.net');
+const testAvailable = require('check-internet-connected');
+const testSpeed = require('@opstalent/speedtest.net');
+
+let getFilepath = (date) => {
+    const path = './public/';
+    return path + date + ".json";
+};
+
+let getDates = () => {
+    const dir = './public/';
+    const files = fs.readdirSync(dir);
+    const dates = files.map((filename) => path.parse(filename).name);
+    return dates;
+}
+
+let getResults = (date) => {
+    const filepath = getFilepath(date);
+    const data = fs.readFileSync(filepath, 'utf-8');
+    return data.toString();
+};
+
+let writeDataPoint = (datapoint, key) => {
+    const date = moment().format("YYYY-MM-DD");
+    const filepath = getFilepath(date);
+    if (!fs.existsSync(filepath)) {
+        const json = {
+            "Speedtests": [],
+            "Availability": []
+        }
+        fs.writeFileSync(filepath, JSON.stringify(json), (err) => {
+            if (err) {
+                throw err;
+            }
+            console.log("JSON File Created: " + filepath)
+        });
+    }
+    fs.readFile(filepath, 'utf-8', (err, file) => {
+        if (err) {
+            throw err;
+        }
+
+        const json = JSON.parse(file.toString());
+        json[key].push(datapoint);
+
+        fs.writeFile(filepath, JSON.stringify(json, null, 4), (err) => {
+            if (err) {
+                throw err;
+            }
+            console.log("JSON data is saved.");
+        });
+    });
+};
+
+let writePingResult = (result) => {
+    let datapoint = {
+        "date": moment().format("YYYY-M-D H:mm"),
+        "available": result
+    };
+    writeDataPoint(datapoint, "Availability");
+};
 
 // Change this to choose the frequency of speedtest https://crontab.guru/
 cron.schedule('*/2 * * * *', () => {
+    /* Test Connection Availability */
+    const availabilityConfig = {
+        timeout: 5000,
+        retries: 5,
+        domain: 'http://neverssl.com/'
+    };
+    testAvailable(availabilityConfig)
+        .then((res) => { writePingResult(1); })
+        .catch((ex) => { writePingResult(0); });
 
-    const test = speedTest({
+    /* Test Upload/Download Speed */
+
+    const speed_test = testSpeed({
         maxTime: 5000
     });
-
-    test.on('data', data => {
+    speed_test.on('data', data => {
         console.log("##################################")
         console.log("DOWNLOAD: " + data.speeds.download)
         console.log("UPLOAD: " + data.speeds.upload)
@@ -29,44 +99,31 @@ cron.schedule('*/2 * * * *', () => {
             "download": data.speeds.download,
             "upload": data.speeds.upload
         }
-        fs.readFile('./public/file.json', 'utf-8', (err, file) => { // get Json file with older results
-            if (err) {
-                throw err;
-            }
-
-            // parse the results
-            const newJson = JSON.parse(file.toString());
-            newJson.Speedtests.push(content) // push the new speedtest to the other results
-
-            // write all the results to the file
-            fs.writeFile('./public/file.json', JSON.stringify(newJson, null, 4), (err) => {
-                if (err) {
-                    throw err;
-                }
-                console.log("JSON data is saved.");
-            });
-        });
-
+        writeDataPoint(content, "Speedtests");
     });
-
-    test.on('error', err => {
+    speed_test.on('error', err => {
         console.error(err);
     });
 });
 
 
-app.get("/", (req, res) => { // when visiting the homepage, load the results and send to the frontend
-    fs.readFile('./public/file.json', 'utf-8', (err, data) => {
-        if (err) {
-            throw err;
-        }
-
-        const newJson = data.toString();
-        res.render("index", {
-            results: newJson
-        })
+app.get('/', function (req, res) {
+    const date = moment().format("YYYY-MM-DD");
+    console.log("GET: '/' => " + date);
+    res.render("index", {
+        results: getResults(date),
+        dates: getDates()
     })
-})
+});
+
+app.get('/:date', function (req, res) {
+    const date = req.params.date;
+    console.log("GET: '/" + date + "'");
+    res.render("index", {
+        results: getResults(date),
+        dates: getDates()
+    })
+});
 
 app.listen(1029, () => {
     console.log(`Express running → PORT 1029`);

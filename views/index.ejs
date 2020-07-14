@@ -7,18 +7,50 @@
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.css">
     <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.0/jquery.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script> 
+    <script src="//cdnjs.cloudflare.com/ajax/libs/morris.js/0.5.1/morris.min.js"></script>
 </head>
 
 <body>
-    <div id="myfirstchart" style="height: 500px;"></div>
+    <script>
+        function selectDate(event) {
+            // console.log(window.location.pathname);
+            const date = event.target.value;
+            window.location.href = window.location.origin + '/' + date;
+        };
+    </script>
+    <label for="dates">Date:</label>
+    <select name="dates" id="dates" onchange="selectDate(event)" selected=>
+        <option disabled selected value> -- Select a Date -- </option>
+        <% dates.forEach((date) => { %>
+        <option value="<%= date %>"> <%=date %> </option>
+        <%  })  %>
+    </select>
+    <div id="availability" style="height: 500px;"></div>
+    <div id="speed" style="height: 500px;"></div>
 
     <script>
         let parsedResults = JSON.parse( <%- JSON.stringify(results) %> )
 
         new Morris.Area({
             // ID of the element in which to draw the chart.
-            element: 'myfirstchart',
+            element: 'availability',
+            // Chart data records -- each entry in this array corresponds to a point on
+            // the chart.
+            data: parsedResults.Availability,
+            // The name of the data record attribute that contains x-values.
+            xkey: 'date',
+            smooth: false,
+            lineColors: ['green'],
+            // A list of names of data record attributes that contain y-values.
+            ykeys: ['available'],
+            // Labels for the ykeys -- will be displayed when you hover over the
+            // chart.
+            labels: ['Available']
+        });
+
+        new Morris.Area({
+            // ID of the element in which to draw the chart.
+            element: 'speed',
             // Chart data records -- each entry in this array corresponds to a point on
             // the chart.
             data: parsedResults.Speedtests,
