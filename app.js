@@ -39,7 +39,7 @@ let writeDataPoint = (datapoint, key) => {
             "Speedtests": [],
             "Availability": []
         }
-        fs.writeFile(filepath, JSON.stringify(json), (err) => {
+        fs.writeFileSync(filepath, JSON.stringify(json), (err) => {
             if (err) {
                 throw err;
             }
